@@ -21,7 +21,10 @@ exports.getRooms = async (req, res) => {
       `SELECT r.*, COUNT(ra.student_id) AS current_occupancy
        FROM room r
        LEFT JOIN room_allocation ra ON r.room_id = ra.room_id
-       GROUP BY r.room_id`
+       GROUP BY r.room_id
+       ORDER BY
+         CASE WHEN r.room_number ~ '^[0-9]+$' THEN r.room_number::int END NULLS LAST,
+         r.room_number`
     );
     res.json(result.rows);
   } catch (err) {

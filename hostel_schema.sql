@@ -129,36 +129,41 @@ FOR EACH ROW EXECUTE FUNCTION prevent_checkout_without_approval();
 
 -- Sample Data
 INSERT INTO student (name, email, phone, gender, dob, address) VALUES
-('Alice', 'alice@example.com', '1234567890', 'Female', '2002-01-01', '123 Main St'),
-('Bob', 'bob@example.com', '2345678901', 'Male', '2001-05-12', '456 Oak Ave'),
-('Charlie', 'charlie@example.com', '3456789012', 'Male', '2003-03-15', '789 Pine Rd'),
+('Kimiko', 'kimiko@example.com', '1234567890', 'Female', '2002-01-01', '123 Main St'),
+('Frenchie', 'frenchie@example.com', '2345678901', 'Male', '2001-05-12', '456 Oak Ave'),
+('Butcher', 'butcher@example.com', '3456789012', 'Male', '2003-03-15', '789 Pine Rd'),
 ('Diana', 'diana@example.com', '4567890123', 'Female', '2002-07-22', '321 Maple St'),
-('Eve', 'eve@example.com', '5678901234', 'Female', '2001-11-30', '654 Cedar Blvd');
+('Becca', 'becca@example.com', '5678901234', 'Female', '2001-11-30', '654 Cedar Blvd');
 
 INSERT INTO room (room_number, capacity) VALUES
-('1', 1),
-('2', 1),
-('3', 1),
-('4', 1),
-('5', 1),
-('6', 1),
-('7', 1),
-('8', 1),
-('9', 1),
-('10', 1),
-('11', 1),
-('12', 1);
+('1', 2),
+('2', 2),
+('3', 2),
+('4', 2),
+('5', 2),
+('6', 2),
+('7', 2),
+('8', 2),
+('9', 2),
+('10', 2),
+('11', 2),
+('12', 2);
 
 INSERT INTO room_allocation (student_id, room_id) VALUES
 (1, 1),
 (2, 2),
-(3, 3),
-(4, 4),
-(5, 5);
+(3, 2),
+(4, 1),
+(5, 3);
 
 UPDATE room
-SET occupancy = 1
-WHERE room_id BETWEEN 1 AND 5;
+SET occupancy = counts.total
+FROM (
+    SELECT room_id, COUNT(*)::int AS total
+    FROM room_allocation
+    GROUP BY room_id
+) counts
+WHERE room.room_id = counts.room_id;
 
 INSERT INTO mess_menu (day, meal_type, description) VALUES
 ('Monday', 'Lunch', 'Rice, Dal, Paneer'),

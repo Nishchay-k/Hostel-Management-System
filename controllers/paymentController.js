@@ -31,9 +31,25 @@ exports.getPayments = async (req, res) => {
         ? await pool.query('SELECT * FROM payment WHERE student_id=$1 AND status=$2 ORDER BY payment_date DESC, payment_id DESC', [req.user.student_id, status])
         : await pool.query('SELECT * FROM payment WHERE student_id=$1 ORDER BY payment_date DESC, payment_id DESC', [req.user.student_id]);
     } else if (status) {
-      result = await pool.query('SELECT * FROM payment WHERE status=$1 ORDER BY payment_date DESC, payment_id DESC', [status]);
+      result = await pool.query(
+        `SELECT p.*, s.name AS student_name, r.room_number
+         FROM payment p
+         JOIN student s ON s.student_id = p.student_id
+         LEFT JOIN room_allocation ra ON ra.student_id = s.student_id
+         LEFT JOIN room r ON r.room_id = ra.room_id
+         WHERE p.status=$1
+         ORDER BY p.payment_date DESC, p.payment_id DESC`,
+        [status]
+      );
     } else {
-      result = await pool.query('SELECT * FROM payment ORDER BY payment_date DESC, payment_id DESC');
+      result = await pool.query(
+        `SELECT p.*, s.name AS student_name, r.room_number
+         FROM payment p
+         JOIN student s ON s.student_id = p.student_id
+         LEFT JOIN room_allocation ra ON ra.student_id = s.student_id
+         LEFT JOIN room r ON r.room_id = ra.room_id
+         ORDER BY p.payment_date DESC, p.payment_id DESC`
+      );
     }
     res.json(result.rows);
   } catch (err) {

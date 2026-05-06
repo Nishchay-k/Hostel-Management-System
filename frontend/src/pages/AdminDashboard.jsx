@@ -100,6 +100,16 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleComplaintStatus = async (complaintId, status) => {
+    setError("");
+    try {
+      await updateComplaint(complaintId, { status });
+      await loadData();
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || "Could not update complaint status.");
+    }
+  };
+
   return (
     <Layout role="admin" activeTab={activeTab} setActiveTab={setActiveTab} notificationData={{ complaints, payments, outside, announcements }}>
       <section className="page-section fade-in">
@@ -132,7 +142,8 @@ export default function AdminDashboard() {
                   rows={complaints.slice(0, 5)}
                   columns={[
                     { key: "complaint_id", label: "ID" },
-                    { key: "student_id", label: "Student" },
+                    { key: "student_name", label: "Student", render: (row) => row.student_name || `#${row.student_id}` },
+                    { key: "room_number", label: "Room" },
                     { key: "description", label: "Description" },
                     { key: "status", label: "Status", render: (row) => <Status value={row.status} /> }
                   ]}
@@ -166,6 +177,7 @@ export default function AdminDashboard() {
               columns={[
                 { key: "student_id", label: "ID" },
                 { key: "name", label: "Name" },
+                { key: "room_number", label: "Room" },
                 { key: "email", label: "Email" },
                 { key: "phone", label: "Phone" },
                 { key: "gender", label: "Gender" },
@@ -198,13 +210,13 @@ export default function AdminDashboard() {
             }
           >
             <DataTable
-              rows={rooms}
+              rows={rooms.filter((room) => Number(room.current_occupancy) > 0)}
               columns={[
-                { key: "room_id", label: "ID" },
                 { key: "room_number", label: "Room" },
                 { key: "capacity", label: "Capacity" },
                 { key: "current_occupancy", label: "Occupied" }
               ]}
+              emptyText="No occupied rooms yet."
             />
           </Panel>
         ) : null}
@@ -215,21 +227,26 @@ export default function AdminDashboard() {
               rows={complaints}
               columns={[
                 { key: "complaint_id", label: "ID" },
-                { key: "student_id", label: "Student" },
+                { key: "student_name", label: "Student", render: (row) => row.student_name || `#${row.student_id}` },
+                { key: "room_number", label: "Room" },
                 { key: "description", label: "Description" },
                 { key: "status", label: "Status", render: (row) => <Status value={row.status} /> },
                 {
                   key: "actions",
                   label: "Actions",
                   render: (row) => (
-                    <div className="button-row">
-                      <button className="text-button" type="button" onClick={() => updateComplaint(row.complaint_id, { status: "resolved" }).then(loadData)}>
-                        Resolve
-                      </button>
-                      <button className="text-button danger" type="button" onClick={() => updateComplaint(row.complaint_id, { status: "rejected" }).then(loadData)}>
-                        Reject
-                      </button>
-                    </div>
+                    row.status === "pending" ? (
+                      <div className="button-row">
+                        <button className="text-button" type="button" onClick={() => handleComplaintStatus(row.complaint_id, "approved")}>
+                          Approve
+                        </button>
+                        <button className="text-button danger" type="button" onClick={() => handleComplaintStatus(row.complaint_id, "rejected")}>
+                          Reject
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="muted">No action</span>
+                    )
                   )
                 }
               ]}
@@ -250,7 +267,8 @@ export default function AdminDashboard() {
               rows={payments}
               columns={[
                 { key: "payment_id", label: "ID" },
-                { key: "student_id", label: "Student" },
+                { key: "student_name", label: "Student", render: (row) => row.student_name || `#${row.student_id}` },
+                { key: "room_number", label: "Room" },
                 { key: "purpose", label: "Purpose", render: (row) => formatPurpose(row.purpose) },
                 { key: "amount", label: "Amount", render: (row) => `Rs. ${row.amount}` },
                 { key: "status", label: "Status", render: (row) => <Status value={row.status} /> }
@@ -267,6 +285,7 @@ export default function AdminDashboard() {
               columns={[
                 { key: "outpass_id", label: "ID" },
                 { key: "name", label: "Student" },
+                { key: "room_number", label: "Room" },
                 { key: "reason", label: "Reason" },
                 { key: "status", label: "Status", render: (row) => <Status value={row.status} /> },
                 {

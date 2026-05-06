@@ -514,11 +514,13 @@ textarea:focus {
 .student-announcement-bar {
   backdrop-filter: blur(14px);
   background: rgba(255, 255, 255, 0.9);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 18px;
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
   display: grid;
   gap: 10px;
   overflow: hidden;
+  margin: 0 clamp(18px, 4vw, 42px) 22px;
   padding: 10px clamp(18px, 4vw, 42px);
   position: sticky;
   top: 88px;

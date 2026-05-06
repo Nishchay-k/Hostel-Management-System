@@ -6,17 +6,24 @@ const adminName = process.env.ADMIN_NAME || 'Hostel Admin';
 const adminEmail = process.env.ADMIN_EMAIL || 'admin@hostel.com';
 const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 const defaultStudentPassword = process.env.DEFAULT_STUDENT_PASSWORD || 'student123';
+const sampleStudents = [
+  { student_id: 1, name: 'Kimiko', email: 'kimiko@example.com', phone: '1234567890', gender: 'Female', dob: '2002-01-01', address: '123 Main St' },
+  { student_id: 2, name: 'Frenchie', email: 'frenchie@example.com', phone: '2345678901', gender: 'Male', dob: '2001-05-12', address: '456 Oak Ave' },
+  { student_id: 3, name: 'Butcher', email: 'butcher@example.com', phone: '3456789012', gender: 'Male', dob: '2003-03-15', address: '789 Pine Rd' },
+  { student_id: 4, name: 'Diana', email: 'diana@example.com', phone: '4567890123', gender: 'Female', dob: '2002-07-22', address: '321 Maple St' },
+  { student_id: 5, name: 'Becca', email: 'becca@example.com', phone: '5678901234', gender: 'Female', dob: '2001-11-30', address: '654 Cedar Blvd' }
+];
+const sampleAllocations = [
+  { student_id: 1, room_number: '1' },
+  { student_id: 2, room_number: '2' },
+  { student_id: 3, room_number: '2' },
+  { student_id: 4, room_number: '1' },
+  { student_id: 5, room_number: '3' }
+];
 
 async function prepareDatabase() {
   const adminHash = await bcrypt.hash(adminPassword, 10);
   const studentHash = await bcrypt.hash(defaultStudentPassword, 10);
-  const sampleStudentEmails = [
-    'alice@example.com',
-    'bob@example.com',
-    'charlie@example.com',
-    'diana@example.com',
-    'eve@example.com'
-  ];
 
   await pool.query('BEGIN');
 
@@ -79,6 +86,15 @@ async function prepareDatabase() {
     [studentHash]
   );
 
+  for (const student of sampleStudents) {
+    await pool.query(
+      `UPDATE student
+       SET name=$1, email=$2, phone=$3, gender=$4, dob=$5, address=$6, role='student', is_active=true
+       WHERE student_id=$7`,
+      [student.name, student.email, student.phone, student.gender, student.dob, student.address, student.student_id]
+    );
+  }
+
   await pool.query(
     `UPDATE room
      SET room_number = CONCAT('legacy-', room_id)
@@ -89,7 +105,7 @@ async function prepareDatabase() {
   await pool.query(
     `UPDATE room
      SET room_number = room_id::text,
-         capacity = 1
+         capacity = 2
      WHERE room_id BETWEEN 1 AND 12`
   );
 
@@ -97,35 +113,24 @@ async function prepareDatabase() {
   for (const roomNumber of roomNumbers) {
     await pool.query(
       `INSERT INTO room (room_number, capacity, occupancy)
-       VALUES ($1, 1, 0)
+       VALUES ($1, 2, 0)
        ON CONFLICT (room_number) DO UPDATE
        SET capacity = EXCLUDED.capacity`,
       [roomNumber]
     );
   }
 
-  const demoStudents = await pool.query(
-    `SELECT student_id, email
-     FROM student
-     WHERE email = ANY($1::text[])
-     ORDER BY student_id`,
-    [sampleStudentEmails]
-  );
+  await pool.query('DELETE FROM room_allocation WHERE student_id = ANY($1::int[])', [sampleStudents.map((student) => student.student_id)]);
 
-  const hasAllocations = await pool.query('SELECT COUNT(*)::int AS count FROM room_allocation');
-  if (hasAllocations.rows[0].count === 0) {
-    for (let index = 0; index < demoStudents.rows.length && index < 12; index += 1) {
-      const roomNumber = String(index + 1);
-      const roomResult = await pool.query('SELECT room_id FROM room WHERE room_number=$1', [roomNumber]);
-      if (roomResult.rowCount === 0) continue;
-
-      await pool.query(
-        `INSERT INTO room_allocation (student_id, room_id)
-         VALUES ($1, $2)
-         ON CONFLICT (student_id) DO NOTHING`,
-        [demoStudents.rows[index].student_id, roomResult.rows[0].room_id]
-      );
-    }
+  for (const allocation of sampleAllocations) {
+    const roomResult = await pool.query('SELECT room_id FROM room WHERE room_number=$1', [allocation.room_number]);
+    if (roomResult.rowCount === 0) continue;
+    await pool.query(
+      `INSERT INTO room_allocation (student_id, room_id)
+       VALUES ($1, $2)
+       ON CONFLICT (student_id) DO UPDATE SET room_id = EXCLUDED.room_id`,
+      [allocation.student_id, roomResult.rows[0].room_id]
+    );
   }
 
   await pool.query(

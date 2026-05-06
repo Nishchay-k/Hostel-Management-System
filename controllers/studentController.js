@@ -29,7 +29,13 @@ exports.addStudent = async (req, res) => {
 // Get all students
 exports.getAllStudents = async (req, res) => {
   try {
-    const result = await pool.query(`SELECT ${publicStudentFields} FROM student ORDER BY student_id`);
+    const result = await pool.query(
+      `SELECT s.${publicStudentFields.replaceAll(', ', ', s.')}, r.room_number
+       FROM student s
+       LEFT JOIN room_allocation ra ON ra.student_id = s.student_id
+       LEFT JOIN room r ON r.room_id = ra.room_id
+       ORDER BY s.student_id`
+    );
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });

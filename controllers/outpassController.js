@@ -68,8 +68,10 @@ exports.checkinOutpass = async (req, res) => {
 exports.getCurrentlyOutside = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT o.*, s.name FROM outpass o
+      `SELECT o.*, s.name, r.room_number FROM outpass o
        JOIN student s ON o.student_id = s.student_id
+       LEFT JOIN room_allocation ra ON ra.student_id = s.student_id
+       LEFT JOIN room r ON r.room_id = ra.room_id
        WHERE o.check_out_time IS NOT NULL AND o.check_in_time IS NULL`
     );
     res.json(result.rows);

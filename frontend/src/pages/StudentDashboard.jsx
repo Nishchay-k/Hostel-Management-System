@@ -118,15 +118,17 @@ export default function StudentDashboard() {
 
   return (
     <Layout role="student" activeTab={activeTab} setActiveTab={setActiveTab} notificationData={{ complaints, payments, outside: [], announcements }}>
-      <AnnouncementTicker
-        announcements={latestAnnouncements}
-        expandedAnnouncement={expandedAnnouncement}
-        setExpandedAnnouncement={setExpandedAnnouncement}
-        onRead={async (id) => {
-          await markAnnouncementRead(id);
-          await loadData();
-        }}
-      />
+      {activeTab === "overview" ? (
+        <AnnouncementTicker
+          announcements={latestAnnouncements}
+          expandedAnnouncement={expandedAnnouncement}
+          setExpandedAnnouncement={setExpandedAnnouncement}
+          onRead={async (id) => {
+            await markAnnouncementRead(id);
+            await loadData();
+          }}
+        />
+      ) : null}
       <section className="page-section fade-in">
         <div className="section-toolbar">
           <div>
